@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum RFQStatus {
+  NEW
+  IN_REVIEW
+  QUOTED
+  CLOSED
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  SEASONAL
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+}
+
+// ── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  role         Role     @default(VIEWER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  variety     String?
+  shuMin      Int?
+  shuMax      Int?
+  astaValue   String?
+  moisture    String?
+  description String?
+  status      ProductStatus @default(ACTIVE)
+  images      MediaFile[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("products")
+}
+
+model RFQ {
+  id           String    @id @default(cuid())
+  name         String
+  email        String
+  country      String
+  product      String
+  quantity     String
+  message      String?
+  status       RFQStatus @default(NEW)
+  internalNote String?
+  assignedTo   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("rfqs")
+}
+
+model Certification {
+  id          String    @id @default(cuid())
+  name        String
+  issuingBody String
+  certNumber  String?
+  issuedAt    DateTime
+  expiresAt   DateTime?
+  fileUrl     String
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("certifications")
+}
+
+model MediaFile {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  url        String
+  mimeType   String
+  sizeBytes  Int
+  uploadedBy String
+  createdAt  DateTime @default(now())
+
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId String?
+
+  @@map("media_files")
+}
+
+model NotificationLog {
+  id        String             @id @default(cuid())
+  recipient String
+  template  String
+  status    NotificationStatus
+  error     String?
+  sentAt    DateTime           @default(now())
+
+  @@map("notification_logs")
+}

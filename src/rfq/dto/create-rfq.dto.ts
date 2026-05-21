@@ -1,0 +1,28 @@
+import { IsEmail, IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+
+export class CreateRfqDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(2)
+  country: string;
+
+  @IsString()
+  @MinLength(2)
+  product: string;
+
+  @IsString()
+  @MinLength(1)
+  quantity: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  message?: string;
+}
