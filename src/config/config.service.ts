@@ -23,7 +23,7 @@ export class AppConfigService {
   get awsSecretAccessKey() { return this.config.get('AWS_SECRET_ACCESS_KEY', { infer: true }); }
   get awsS3Bucket()        { return this.config.get('AWS_S3_BUCKET',         { infer: true }); }
 
-  get resendApiKey()    { return this.config.get('RESEND_API_KEY',     { infer: true }); }
-  get resendFromEmail() { return this.config.get('RESEND_FROM_EMAIL',  { infer: true }); }
-  get adminEmail()      { return this.config.get('ADMIN_EMAIL',        { infer: true }); }
+  get brevoApiKey()    { return this.config.get('BREVO_API_KEY',    { infer: true }); }
+  get brevoFromEmail() { return this.config.get('BREVO_FROM_EMAIL', { infer: true }); }
+  get adminEmail()     { return this.config.get('ADMIN_EMAIL',      { infer: true }); }
 }

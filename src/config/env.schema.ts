@@ -16,15 +16,15 @@ export const envSchema = z.object({
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
 
-  // AWS S3
+  // AWS S3 (optional until Phase 7 media uploads)
   AWS_REGION: z.string().default('ap-south-1'),
-  AWS_ACCESS_KEY_ID: z.string().min(1),
-  AWS_SECRET_ACCESS_KEY: z.string().min(1),
-  AWS_S3_BUCKET: z.string().min(1),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_S3_BUCKET: z.string().optional(),
 
-  // Resend
-  RESEND_API_KEY: z.string().min(1),
-  RESEND_FROM_EMAIL: z.string().email().default('noreply@deccanharvests.com'),
+  // Brevo
+  BREVO_API_KEY: z.string().min(1),
+  BREVO_FROM_EMAIL: z.string().email(),
   ADMIN_EMAIL: z.string().email(),
 });
 

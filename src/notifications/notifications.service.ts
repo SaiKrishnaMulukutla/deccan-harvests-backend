@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Resend } from 'resend';
 import { AppConfigService } from '../config/config.service';
 import { PrismaService } from '../database/prisma.service';
 import { rfqReceivedTemplate } from './templates/rfq-received.template';
@@ -17,15 +16,12 @@ interface RfqData {
 
 @Injectable()
 export class NotificationsService {
-  private readonly resend: Resend;
   private readonly logger = new Logger(NotificationsService.name);
 
   constructor(
     private readonly config: AppConfigService,
     private readonly prisma: PrismaService,
-  ) {
-    this.resend = new Resend(this.config.resendApiKey);
-  }
+  ) {}
 
   async sendRfqReceivedToAdmin(rfq: RfqData) {
     const template = rfqReceivedTemplate(rfq);
@@ -42,12 +38,25 @@ export class NotificationsService {
     let error: string | undefined;
 
     try {
-      await this.resend.emails.send({
-        from: this.config.resendFromEmail,
-        to,
-        subject,
-        html,
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': this.config.brevoApiKey,
+        },
+        body: JSON.stringify({
+          sender: { email: this.config.brevoFromEmail, name: 'Deccan Harvests' },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+        }),
       });
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`Brevo ${res.status}: ${body}`);
+      }
+
       this.logger.log(`Email sent [${template}] → ${to}`);
     } catch (err) {
       status = 'FAILED';
