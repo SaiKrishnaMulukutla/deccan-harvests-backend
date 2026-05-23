@@ -20,10 +20,9 @@ export class S3Service {
   constructor(private readonly config: AppConfigService) {
     this.s3 = new S3Client({
       region: this.config.awsRegion,
-      credentials: {
-        accessKeyId: this.config.awsAccessKeyId,
-        secretAccessKey: this.config.awsSecretAccessKey,
-      },
+      ...(this.config.awsAccessKeyId && this.config.awsSecretAccessKey
+        ? { credentials: { accessKeyId: this.config.awsAccessKeyId, secretAccessKey: this.config.awsSecretAccessKey } }
+        : {}),
     });
   }
 
