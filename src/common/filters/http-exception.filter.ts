@@ -36,16 +36,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
+    const requestId = (request as Request & { id?: string }).id;
+
     // Never leak internals in production
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error(`${request.method} ${request.url}`, exception instanceof Error ? exception.stack : String(exception));
+      this.logger.error(
+        `[${requestId}] ${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
       message = 'An unexpected error occurred';
     }
 
     response.status(status).json({
       success: false,
       error: { code, message },
-      meta: { path: request.url, timestamp: new Date().toISOString() },
+      meta: { path: request.url, requestId, timestamp: new Date().toISOString() },
     });
   }
 }

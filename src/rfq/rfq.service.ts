@@ -1,24 +1,31 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { RFQStatus } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateRfqDto } from './dto/create-rfq.dto';
 import { UpdateRfqStatusDto } from './dto/update-rfq-status.dto';
 import { PaginationDto, buildPaginationMeta } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class RfqService {
+  private readonly logger = new Logger(RfqService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly audit: AuditService,
   ) {}
 
   async create(dto: CreateRfqDto) {
     const rfq = await this.prisma.rFQ.create({ data: dto });
 
-    // Fire-and-forget notifications
-    this.notifications.sendRfqReceivedToAdmin(rfq).catch(() => null);
-    this.notifications.sendRfqAcknowledgement(rfq).catch(() => null);
+    this.notifications.sendRfqReceivedToAdmin(rfq).catch((err: unknown) =>
+      this.logger.error(`sendRfqReceivedToAdmin failed for rfq ${rfq.id}`, err),
+    );
+    this.notifications.sendRfqAcknowledgement(rfq).catch((err: unknown) =>
+      this.logger.error(`sendRfqAcknowledgement failed for rfq ${rfq.id}`, err),
+    );
 
     return rfq;
   }
@@ -55,7 +62,17 @@ export class RfqService {
     const rfq = await this.findOne(id);
     const updated = await this.prisma.rFQ.update({ where: { id }, data: dto });
 
-    this.notifications.sendRfqStatusUpdate(rfq, dto.status).catch(() => null);
+    this.notifications.sendRfqStatusUpdate(rfq, dto.status).catch((err: unknown) =>
+      this.logger.error(`sendRfqStatusUpdate failed for rfq ${id}`, err),
+    );
+
+    this.audit.log({
+      entity:   'RFQ',
+      entityId: id,
+      action:   'UPDATE',
+      before:   { status: rfq.status },
+      after:    { status: dto.status },
+    });
 
     return updated;
   }

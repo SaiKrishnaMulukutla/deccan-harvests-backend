@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestConfigService } from '@nestjs/config';
+import type ms from 'ms';
 import { Env } from './env.schema';
 
 @Injectable()
@@ -15,8 +16,9 @@ export class AppConfigService {
 
   get jwtAccessSecret()  { return this.config.get('JWT_ACCESS_SECRET',  { infer: true }); }
   get jwtRefreshSecret() { return this.config.get('JWT_REFRESH_SECRET', { infer: true }); }
-  get jwtAccessExpiry()  { return this.config.get('JWT_ACCESS_EXPIRY',  { infer: true }); }
-  get jwtRefreshExpiry() { return this.config.get('JWT_REFRESH_EXPIRY', { infer: true }); }
+  // Cast to ms.StringValue — safe because env.schema validates the format via Zod
+  get jwtAccessExpiry()  { return this.config.get('JWT_ACCESS_EXPIRY',  { infer: true }) as ms.StringValue; }
+  get jwtRefreshExpiry() { return this.config.get('JWT_REFRESH_EXPIRY', { infer: true }) as ms.StringValue; }
 
   get awsRegion()          { return this.config.get('AWS_REGION',            { infer: true }); }
   get awsAccessKeyId()     { return this.config.get('AWS_ACCESS_KEY_ID',     { infer: true }); }

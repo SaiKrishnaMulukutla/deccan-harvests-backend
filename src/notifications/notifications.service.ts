@@ -73,25 +73,7 @@ export class NotificationsService {
     let error: string | undefined;
 
     try {
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': this.config.brevoApiKey,
-        },
-        body: JSON.stringify({
-          sender: { email: this.config.brevoFromEmail, name: 'Deccan Harvests' },
-          to: [{ email: to }],
-          subject,
-          htmlContent: html,
-        }),
-      });
-
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`Brevo ${res.status}: ${body}`);
-      }
-
+      await this.callBrevoWithRetry(to, subject, html);
       this.logger.log(`Email sent [${template}] → ${to}`);
     } catch (err) {
       status = 'FAILED';
@@ -102,5 +84,42 @@ export class NotificationsService {
     await this.prisma.notificationLog.create({
       data: { recipient: to, template, status, error },
     });
+  }
+
+  private async callBrevoWithRetry(to: string, subject: string, html: string): Promise<void> {
+    const DELAYS_MS = [0, 1_000, 10_000]; // attempt 1 immediate, 2 after 1 s, 3 after 10 s
+
+    for (let attempt = 0; attempt < DELAYS_MS.length; attempt++) {
+      if (DELAYS_MS[attempt] > 0) {
+        await new Promise((r) => setTimeout(r, DELAYS_MS[attempt]));
+      }
+
+      try {
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': this.config.brevoApiKey,
+          },
+          body: JSON.stringify({
+            sender: { email: this.config.brevoFromEmail, name: 'Deccan Harvests' },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+          }),
+        });
+
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error(`Brevo ${res.status}: ${body}`);
+        }
+
+        return; // success
+      } catch (err) {
+        const isLastAttempt = attempt === DELAYS_MS.length - 1;
+        if (isLastAttempt) throw err;
+        this.logger.warn(`Brevo attempt ${attempt + 1} failed, retrying… ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
   }
 }

@@ -10,10 +10,10 @@ export class CertificationsService {
     return this.prisma.certification.create({ data: dto });
   }
 
-  // Public — only active, non-expired certs
+  // Public — only active, non-deleted certs
   findAllPublic() {
     return this.prisma.certification.findMany({
-      where: { active: true },
+      where: { active: true, deletedAt: null },
       orderBy: { issuedAt: 'desc' },
       select: {
         id: true, name: true, issuingBody: true,
@@ -23,13 +23,16 @@ export class CertificationsService {
     });
   }
 
-  // Admin — all
+  // Admin — all non-deleted
   findAll() {
-    return this.prisma.certification.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.prisma.certification.findMany({
+      where: { deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(id: string) {
-    const cert = await this.prisma.certification.findUnique({ where: { id } });
+    const cert = await this.prisma.certification.findFirst({ where: { id, deletedAt: null } });
     if (!cert) throw new NotFoundException('Certification not found');
     return cert;
   }
@@ -41,7 +44,7 @@ export class CertificationsService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.prisma.certification.delete({ where: { id } });
+    await this.prisma.certification.update({ where: { id }, data: { deletedAt: new Date() } });
     return { message: 'Certification deleted' };
   }
 }

@@ -6,11 +6,11 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AppConfigService } from '../config/config.service';
+import { MAX_FILE_SIZE_BYTES, MAX_PRESIGNED_EXPIRY_SEC } from '../common/constants';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
 ]);
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 @Injectable()
 export class S3Service {
@@ -59,11 +59,12 @@ export class S3Service {
     this.logger.log(`Deleted S3 object: ${key}`);
   }
 
-  async presignedUrl(key: string, expiresInSeconds = 3600): Promise<string> {
+  async presignedUrl(key: string, expiresInSeconds = MAX_PRESIGNED_EXPIRY_SEC): Promise<string> {
+    const capped = Math.min(expiresInSeconds, MAX_PRESIGNED_EXPIRY_SEC);
     const command = new PutObjectCommand({
       Bucket: this.config.awsS3Bucket,
       Key: key,
     });
-    return getSignedUrl(this.s3, command, { expiresIn: expiresInSeconds });
+    return getSignedUrl(this.s3, command, { expiresIn: capped });
   }
 }

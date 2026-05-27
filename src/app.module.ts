@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { AppController } from './app.controller';
 import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
@@ -11,6 +12,7 @@ import { CertificationsModule } from './certifications/certifications.module';
 import { MediaModule } from './media/media.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SubscribersModule } from './subscribers/subscribers.module';
+import { AuditModule } from './audit/audit.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -27,6 +29,7 @@ import { RolesGuard } from './guards/roles.guard';
     MediaModule,
     NotificationsModule,
     SubscribersModule,
+    AuditModule,
   ],
   providers: [
     // Apply JwtAuthGuard globally — routes opt-out via @Public()
@@ -34,4 +37,8 @@ import { RolesGuard } from './guards/roles.guard';
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

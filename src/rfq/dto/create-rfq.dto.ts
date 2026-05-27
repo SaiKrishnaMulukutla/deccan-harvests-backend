@@ -1,4 +1,5 @@
 import { IsEmail, IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateRfqDto {
   @IsString()
@@ -6,6 +7,7 @@ export class CreateRfqDto {
   @MaxLength(100)
   name: string;
 
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.toLowerCase().trim() : value))
   @IsEmail()
   email: string;
 

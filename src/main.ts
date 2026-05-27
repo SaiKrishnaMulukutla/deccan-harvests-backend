@@ -11,6 +11,9 @@ import { ResponseTransformInterceptor } from './common/interceptors/response-tra
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ── Graceful shutdown (SIGTERM / SIGINT) ──
+  app.enableShutdownHooks();
+
   // ── Security headers ──
   app.use(helmet());
 
@@ -44,6 +47,16 @@ async function bootstrap() {
       windowMs: 60 * 60 * 1000,
       max: 10,
       message: { success: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Too many quote requests. Try again later.' } },
+    }),
+  );
+
+  // ── Stricter rate limit on user creation (admin route, brute-force guard) ──
+  app.use(
+    '/api/v1/users',
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 10,
+      message: { success: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Too many requests. Try again later.' } },
     }),
   );
 

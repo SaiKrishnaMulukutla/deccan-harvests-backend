@@ -13,7 +13,7 @@ export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateProductDto) {
-    const existing = await this.prisma.product.findUnique({ where: { slug: dto.slug } });
+    const existing = await this.prisma.product.findFirst({ where: { slug: dto.slug, deletedAt: null } });
     if (existing) throw new ConflictException('Product slug already exists');
 
     return this.prisma.product.create({
@@ -22,26 +22,27 @@ export class ProductsService {
     });
   }
 
-  // Public: only ACTIVE products
+  // Public: only ACTIVE, non-deleted products
   findAllPublic() {
     return this.prisma.product.findMany({
-      where: { status: ProductStatus.ACTIVE },
+      where: { status: ProductStatus.ACTIVE, deletedAt: null },
       include: { images: { select: { url: true, key: true } } },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  // Admin: all products
+  // Admin: all non-deleted products
   findAll() {
     return this.prisma.product.findMany({
+      where: { deletedAt: null },
       include: { images: { select: { url: true, key: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findBySlug(slug: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { slug },
+    const product = await this.prisma.product.findFirst({
+      where: { slug, deletedAt: null },
       include: { images: true },
     });
     if (!product) throw new NotFoundException('Product not found');
@@ -49,8 +50,8 @@ export class ProductsService {
   }
 
   async findOne(id: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
+    const product = await this.prisma.product.findFirst({
+      where: { id, deletedAt: null },
       include: { images: true },
     });
     if (!product) throw new NotFoundException('Product not found');
@@ -63,7 +64,7 @@ export class ProductsService {
     const slug = (dto as { slug?: string }).slug;
     if (slug) {
       const conflict = await this.prisma.product.findFirst({
-        where: { slug, NOT: { id } },
+        where: { slug, deletedAt: null, NOT: { id } },
       });
       if (conflict) throw new ConflictException('Slug already in use by another product');
     }
@@ -77,7 +78,7 @@ export class ProductsService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.prisma.product.delete({ where: { id } });
+    await this.prisma.product.update({ where: { id }, data: { deletedAt: new Date() } });
     return { message: 'Product deleted' };
   }
 }

@@ -36,14 +36,17 @@ enum NotificationStatus {
 // ── Models ───────────────────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String     @id @default(cuid())
+  email        String     @unique
   password     String
   name         String
-  role         Role     @default(VIEWER)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         Role       @default(VIEWER)
+  isActive     Boolean    @default(true)
+  tokenVersion Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  auditLogs    AuditLog[]
 
   @@map("users")
 }
@@ -60,9 +63,11 @@ model Product {
   description String?
   status      ProductStatus @default(ACTIVE)
   images      MediaFile[]
+  deletedAt   DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  @@index([deletedAt])
   @@map("products")
 }
 
@@ -80,6 +85,8 @@ model RFQ {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  @@index([status, createdAt])
+  @@index([country])
   @@map("rfqs")
 }
 
@@ -92,6 +99,7 @@ model Certification {
   expiresAt   DateTime?
   fileUrl     String
   active      Boolean   @default(true)
+  deletedAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -121,7 +129,36 @@ model NotificationLog {
   error     String?
   sentAt    DateTime           @default(now())
 
+  @@index([template, status])
+  @@index([sentAt])
   @@map("notification_logs")
+}
+
+model SchedulerJob {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  lastRunAt  DateTime?
+  lockedAt   DateTime?
+
+  @@map("scheduler_jobs")
+}
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  userId   String?
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  entity   String
+  entityId String
+  action   String
+  before   Json?
+  after    Json?
+  ip       String?
+  at       DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([at])
+  @@map("audit_logs")
 }
 
 model Subscriber {
@@ -132,5 +169,6 @@ model Subscriber {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
+  @@index([isActive])
   @@map("subscribers")
 }
