@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -23,7 +24,10 @@ const USER_SELECT = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(dto: CreateUserDto) {
     const existing = await this.prisma.user.findUnique({
@@ -33,10 +37,14 @@ export class UsersService {
 
     const hashed = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: { ...dto, email: dto.email.toLowerCase(), password: hashed },
       select: USER_SELECT,
     });
+
+    this.notifications.sendWelcome({ name: user.name, email: user.email, role: user.role }).catch(() => null);
+
+    return user;
   }
 
   findAll() {
@@ -57,7 +65,13 @@ export class UsersService {
       data.password = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
     }
 
-    return this.prisma.user.update({ where: { id }, data, select: USER_SELECT });
+    const updated = await this.prisma.user.update({ where: { id }, data, select: USER_SELECT });
+
+    if (dto.password) {
+      this.notifications.sendPasswordChanged({ name: updated.name, email: updated.email }).catch(() => null);
+    }
+
+    return updated;
   }
 
   async deactivate(id: string) {

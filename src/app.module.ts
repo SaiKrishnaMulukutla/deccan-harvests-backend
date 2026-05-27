@@ -10,6 +10,7 @@ import { RfqModule } from './rfq/rfq.module';
 import { CertificationsModule } from './certifications/certifications.module';
 import { MediaModule } from './media/media.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SubscribersModule } from './subscribers/subscribers.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -25,6 +26,7 @@ import { RolesGuard } from './guards/roles.guard';
     CertificationsModule,
     MediaModule,
     NotificationsModule,
+    SubscribersModule,
   ],
   providers: [
     // Apply JwtAuthGuard globally — routes opt-out via @Public()

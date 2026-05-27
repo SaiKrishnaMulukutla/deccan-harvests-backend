@@ -52,7 +52,11 @@ export class RfqService {
   }
 
   async updateStatus(id: string, dto: UpdateRfqStatusDto) {
-    await this.findOne(id);
-    return this.prisma.rFQ.update({ where: { id }, data: dto });
+    const rfq = await this.findOne(id);
+    const updated = await this.prisma.rFQ.update({ where: { id }, data: dto });
+
+    this.notifications.sendRfqStatusUpdate(rfq, dto.status).catch(() => null);
+
+    return updated;
   }
 }

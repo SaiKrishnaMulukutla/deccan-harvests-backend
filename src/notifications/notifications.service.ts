@@ -1,8 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { RFQStatus } from '@prisma/client';
 import { AppConfigService } from '../config/config.service';
 import { PrismaService } from '../database/prisma.service';
-import { rfqReceivedTemplate } from './templates/rfq-received.template';
-import { rfqAcknowledgementTemplate } from './templates/rfq-acknowledgement.template';
+import {
+  rfqReceivedTemplate,
+  rfqAcknowledgementTemplate,
+  rfqStatusUpdateTemplate,
+  welcomeTemplate,
+  passwordChangedTemplate,
+  broadcastTemplate,
+} from './email-templates';
 
 interface RfqData {
   id: string;
@@ -31,6 +38,34 @@ export class NotificationsService {
   async sendRfqAcknowledgement(rfq: RfqData) {
     const template = rfqAcknowledgementTemplate(rfq);
     await this.send(rfq.email, template.subject, template.html, 'rfq-acknowledgement');
+  }
+
+  async sendRfqStatusUpdate(rfq: RfqData, status: RFQStatus) {
+    const template = rfqStatusUpdateTemplate(rfq, status);
+    await this.send(rfq.email, template.subject, template.html, 'rfq-status-update');
+  }
+
+  async sendWelcome(user: { name: string; email: string; role: string }) {
+    const template = welcomeTemplate(user);
+    await this.send(user.email, template.subject, template.html, 'welcome');
+  }
+
+  async sendPasswordChanged(user: { name: string; email: string }) {
+    const template = passwordChangedTemplate(user);
+    await this.send(user.email, template.subject, template.html, 'password-changed');
+  }
+
+  async sendBroadcast(
+    subscribers: { email: string }[],
+    subject: string,
+    bodyHtml: string,
+  ) {
+    const template = broadcastTemplate(subject, bodyHtml);
+    await Promise.all(
+      subscribers.map((s) =>
+        this.send(s.email, template.subject, template.html, 'broadcast'),
+      ),
+    );
   }
 
   private async send(to: string, subject: string, html: string, template: string) {

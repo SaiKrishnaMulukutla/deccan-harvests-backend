@@ -123,3 +123,14 @@ model NotificationLog {
 
   @@map("notification_logs")
 }
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  country   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("subscribers")
+}
